@@ -63,7 +63,7 @@ runs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - uses: blesswinsamuel/helm-charts/actions/notify@main
+    - uses: blesswinsamuel/github-actions/notify@main
       with:
         github-token: ${{ inputs.github-token }}
         slack-webhook: ${{ inputs.slack-webhook }}

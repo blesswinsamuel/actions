@@ -16,7 +16,7 @@ runs:
         # https://github.com/actions/checkout/issues/13#issuecomment-724415212
         git config --global user.name 'github-actions[bot]'
         git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-    - uses: blesswinsamuel/helm-charts/actions/image-updater@main
+    - uses: blesswinsamuel/github-actions/image-updater@main
       id: update-versions
       env:
         GHCR_TOKEN: ${{ inputs.github-token }}
