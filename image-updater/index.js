@@ -4,20 +4,38 @@ const semver = require("semver");
 const _ = require("lodash");
 const fs = require("fs/promises");
 
+async function doJSONRequest(url, options) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw await response.json();
+  }
+  return await response.json();
+}
+
 async function updateImages() {
   const commitMessages = [];
   const imageUpdaterConfig = yaml.load(
     await fs.readFile("./update-images.yaml", "utf8")
   );
-  const { imageKey, semverKey, versionUpdates } = imageUpdaterConfig;
-  for (const [fileName, fileConfig] of Object.entries(versionUpdates)) {
-    const valuesFile = yaml.load(await fs.readFile(fileName, "utf8"));
+  const { imageKey, semverKey, digestKey, versionUpdates } = imageUpdaterConfig;
+  for (const fileConfig of versionUpdates) {
+    const sourceFiles = fileConfig["sourceFiles"];
+    const valuesContents = {};
+    for (const fileName of sourceFiles) {
+      const values = yaml.load(await fs.readFile(fileName, "utf8"));
+      _.merge(valuesContents, values);
+    }
     const outputFileName = fileConfig["outputFile"];
 
     for (const imageTagKey of fileConfig["imageTagKeys"]) {
-      const imageTagObj = _.get(valuesFile, imageTagKey);
-      const requestedImage = imageTagObj[imageKey];
-      const requestedVersion = imageTagObj[semverKey];
+      const requestedImage = _.get(
+        valuesContents,
+        imageTagKey + "." + imageKey
+      );
+      const requestedVersion = _.get(
+        valuesContents,
+        imageTagKey + "." + semverKey
+      );
       const [registryUrl, ...repoParts] = requestedImage.split("/");
       const repo = repoParts.join("/");
       let dockerApiUrl = "";
@@ -37,33 +55,32 @@ async function updateImages() {
           const gitlabBasicAuth = Buffer.from(
             gitlabUsername + ":" + gitlabPassword
           ).toString("base64");
-          const gitlabJwtAuthResponse = await fetch(
+          const gitlabToken = await doJSONRequest(
             `https://gitlab.com/jwt/auth?service=container_registry&scope=repository:${repo}:pull`,
             { headers: { Authorization: "Basic " + gitlabBasicAuth } }
-          );
-          if (!response.ok) {
-            throw await response.json();
-          }
-          const gitlabToken = (await gitlabJwtAuthResponse.json())["token"];
+          )["token"];
           dockerApiUrl = `https://${registryUrl}/v2/${repo}`;
           headers = { Authorization: "Bearer " + gitlabToken };
           break;
       }
 
-      const response = await fetch(`${dockerApiUrl}/tags/list`, {
+      const tags = await doJSONRequest(`${dockerApiUrl}/tags/list`, {
         headers: headers,
-      });
-      if (!response.ok) {
-        throw await response.json();
-      }
-      const tags = (await response.json())["tags"];
+      })["tags"];
 
-      const tag = semver.maxSatisfying(tags, requestedVersion);
+      const tag =
+        semver.maxSatisfying(tags, requestedVersion) || requestedVersion;
+
+      const digest = await doJSONRequest(`${dockerApiUrl}/manifests/${tag}`, {
+        headers: headers,
+      })["config"]["digest"];
 
       const versionsFile = yaml.load(await fs.readFile(outputFileName, "utf8"));
-      const currentTag = _.get(versionsFile, imageTagKey + ".tag");
-      if (tag !== currentTag) {
-        _.set(versionsFile, imageTagKey + ".tag", tag);
+      const currentTag = _.get(versionsFile, imageTagKey + "." + semverKey);
+      const currentDigest = _.get(versionsFile, imageTagKey + "." + digestKey);
+      if (tag !== currentTag || digest != currentDigest) {
+        _.set(versionsFile, imageTagKey + "." + semverKey, tag);
+        _.set(versionsFile, imageTagKey + "." + digestKey, digest);
         await fs.writeFile(outputFileName, yaml.dump(versionsFile));
 
         console.log(
