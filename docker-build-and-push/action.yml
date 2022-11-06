@@ -27,7 +27,7 @@ inputs:
   docker-build-platforms:
     description: 'Docker build platforms'
     required: true
-    default: 'linux/arm64'
+    default: 'linux/amd64'
   docker-build-args:
     description: 'Docker build args'
     required: false
