@@ -4,6 +4,8 @@ const semver = require("semver");
 const _ = require("lodash");
 const fs = require("fs/promises");
 
+let report = `# Image updates\n\n`;
+
 async function doJSONRequest(url, options) {
   const response = await fetch(url, options);
   if (!response.ok) {
@@ -55,46 +57,54 @@ async function updateImages() {
           const gitlabBasicAuth = Buffer.from(
             gitlabUsername + ":" + gitlabPassword
           ).toString("base64");
-          const gitlabToken = await doJSONRequest(
-            `https://gitlab.com/jwt/auth?service=container_registry&scope=repository:${repo}:pull`,
-            { headers: { Authorization: "Basic " + gitlabBasicAuth } }
+          const gitlabToken = (
+            await doJSONRequest(
+              `https://gitlab.com/jwt/auth?service=container_registry&scope=repository:${repo}:pull`,
+              { headers: { Authorization: "Basic " + gitlabBasicAuth } }
+            )
           )["token"];
           dockerApiUrl = `https://${registryUrl}/v2/${repo}`;
           headers = { Authorization: "Bearer " + gitlabToken };
           break;
       }
 
-      const tags = await doJSONRequest(`${dockerApiUrl}/tags/list`, {
-        headers: headers,
-      })["tags"];
-
+      const tags = (
+        await doJSONRequest(`${dockerApiUrl}/tags/list`, {
+          headers: headers,
+        })
+      )["tags"];
+      console.log(tags, requestedVersion);
       const tag =
         semver.maxSatisfying(tags, requestedVersion) || requestedVersion;
 
-      const digest = await doJSONRequest(`${dockerApiUrl}/manifests/${tag}`, {
-        headers: headers,
-      })["config"]["digest"];
+      const digest = (
+        await doJSONRequest(`${dockerApiUrl}/manifests/${tag}`, {
+          headers: headers,
+        })
+      )["config"]["digest"];
 
       const versionsFile = yaml.load(await fs.readFile(outputFileName, "utf8"));
       const currentTag = _.get(versionsFile, imageTagKey + "." + semverKey);
       const currentDigest = _.get(versionsFile, imageTagKey + "." + digestKey);
-      if (tag !== currentTag || digest != currentDigest) {
+      if (tag !== currentTag || digest !== currentDigest) {
         _.set(versionsFile, imageTagKey + "." + semverKey, tag);
         _.set(versionsFile, imageTagKey + "." + digestKey, digest);
         await fs.writeFile(outputFileName, yaml.dump(versionsFile));
 
-        console.log(
-          `${imageTagKey}: image version updated from ${repo}:${currentTag} to ${repo}:${tag}`
-        );
-        commitMessages.push(`Update ${imageTagKey} to ${tag}`);
+        commitMessages.push(`Update ${imageTagKey} to ${tag} (${digest})`);
+        const message = `${imageTagKey}: image tag/digest updated from ${repo}:${currentTag}:${currentDigest} to ${repo}:${tag}:${digest}`;
+        console.log(message);
+        report += `- ${message}\n`;
       } else {
-        console.log(
-          `${imageTagKey}: no change in image version ${repo}:${tag}`
-        );
+        const message = `${imageTagKey}: no change in image tag/digest ${repo}:${tag}:${digest}`;
+        console.log(message);
+        report += `- ${message}\n`;
       }
     }
   }
-  return commitMessages.join(", ");
+  const commitMessage = commitMessages.join(", ");
+  report += `\n\nCommit message: ${commitMessage}`;
+  return commitMessage;
 }
 
 module.exports = updateImages;
@@ -108,10 +118,7 @@ if (require.main === module) {
     }
     const stepSmmaryFile = process.env.GITHUB_STEP_SUMMARY;
     if (outputFile) {
-      await fs.writeFile(
-        stepSmmaryFile,
-        `${commitMessage.split(", ").join("\n")}`
-      );
+      await fs.writeFile(stepSmmaryFile, report);
     }
   }
   main()
