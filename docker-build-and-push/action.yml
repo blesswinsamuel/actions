@@ -28,6 +28,9 @@ inputs:
     description: 'Docker build platforms'
     required: true
     default: 'linux/arm64'
+  docker-build-args:
+    description: 'Docker build args'
+    required: false
 
 runs:
   using: "composite"
@@ -68,6 +71,7 @@ runs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: ${{ inputs.docker-build-args }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
