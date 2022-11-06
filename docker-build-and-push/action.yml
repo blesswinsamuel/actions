@@ -1,0 +1,69 @@
+name: 'Docker build, push and notify'
+description: 'Docker build, push and notify'
+
+inputs:
+  docker-registry:
+    description: 'Docker Registry'
+    required: true
+    default: ghcr.io
+  docker-image-name:
+    description: 'Docker Image Name'
+    required: true
+    default: '${{ github.repository }}'
+  slack-webhook:
+    description: 'Slack Webhook'
+    required: true
+  github-token:
+    description: 'Github Token'
+    required: true
+  docker-build-platforms:
+    description: 'Docker build platforms'
+    required: false
+    default: 'linux/arm64'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ inputs.docker-registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.github-token }}
+
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ inputs.docker-registry }}/${{ inputs.docker-image-name }}
+        tags: |
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=tag
+          type=ref,event=pr
+          type=edge
+
+    - name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        platforms: ${{ inputs.docker-build-platforms }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - uses: blesswinsamuel/helm-charts/actions/notify@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        slack-webhook: ${{ inputs.slack-webhook }}

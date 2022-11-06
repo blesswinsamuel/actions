@@ -1,0 +1,26 @@
+name: 'Notify'
+description: 'Notify'
+
+inputs:
+  slack-webhook:
+    description: 'Slack Webhook'
+    required: true
+  github-token:
+    description: 'Github Token'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Slack Notification
+      uses: lazy-actions/slatify@v3.0.0
+      if: always()
+      with:
+        type: ${{ job.status }}
+        job_name: "*Docker publish* ${{ github.repository }}"
+        mention: "here"
+        mention_if: "failure"
+        channel: "#github"
+        url: ${{ inputs.slack-webhook }}
+        commit: true
+        token: ${{ inputs.github-token }}

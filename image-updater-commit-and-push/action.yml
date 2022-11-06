@@ -1,0 +1,34 @@
+name: 'Image Updater'
+description: 'Image Updater'
+
+inputs:
+  github-token:
+    description: 'A Github PAT'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v3
+    - name: Git setup
+      shell: bash
+      run: |
+        # https://github.com/actions/checkout/issues/13#issuecomment-724415212
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+    - uses: blesswinsamuel/helm-charts/actions/image-updater@main
+      id: update-versions
+      env:
+        GHCR_TOKEN: ${{ inputs.github-token }}
+    - name: Check for modified files
+      shell: bash
+      id: git-check
+      run: echo modified=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true") >> $GITHUB_OUTPUT
+    - name: Commit latest release version
+      shell: bash
+      if: steps.git-check.outputs.modified == 'true'
+      run: |
+        git status
+        git diff
+        git commit -am "${{steps.update-versions.outputs.commit-message}}"
+        git push
