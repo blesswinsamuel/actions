@@ -3,7 +3,13 @@ description: 'Image Updater'
 
 inputs:
   github-token:
-    description: 'A Github PAT'
+    description: 'A GitHub PAT'
+    required: false
+  gitlab-username:
+    description: 'A GitLab username'
+    required: false
+  gitlab-password:
+    description: 'A GitLab password'
     required: false
 
 runs:
@@ -20,6 +26,8 @@ runs:
       id: update-versions
       env:
         GHCR_TOKEN: ${{ inputs.github-token }}
+        GITLAB_USERNAME: ${{ inputs.gitlab-username }}
+        GITLAB_PASSWORD: ${{ inputs.gitlab-password }}
     - name: Check for modified files
       shell: bash
       id: git-check

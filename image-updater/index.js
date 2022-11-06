@@ -9,16 +9,18 @@ let report = `# Image updates\n\n`;
 async function doJSONRequest(url, options) {
   const response = await fetch(url, options);
   if (!response.ok) {
-    throw await response.json();
+    throw Error(`request failed (${url}): ${await response.text()}`);
   }
-  return await response.json();
+  try {
+    return await response.json();
+  } catch (err) {
+    throw Error(`request failed (${url}): ${err}`);
+  }
 }
 
 async function updateImages() {
   const commitMessages = [];
-  const imageUpdaterConfig = yaml.load(
-    await fs.readFile("./update-images.yaml", "utf8")
-  );
+  const imageUpdaterConfig = yaml.load(await fs.readFile("./update-images.yaml", "utf8"));
   const { imageKey, semverKey, digestKey, versionUpdates } = imageUpdaterConfig;
   for (const fileConfig of versionUpdates) {
     const sourceFiles = fileConfig["sourceFiles"];
@@ -30,14 +32,8 @@ async function updateImages() {
     const outputFileName = fileConfig["outputFile"];
 
     for (const imageTagKey of fileConfig["imageTagKeys"]) {
-      const requestedImage = _.get(
-        valuesContents,
-        imageTagKey + "." + imageKey
-      );
-      const requestedVersion = _.get(
-        valuesContents,
-        imageTagKey + "." + semverKey
-      );
+      const requestedImage = _.get(valuesContents, imageTagKey + "." + imageKey);
+      const requestedVersion = _.get(valuesContents, imageTagKey + "." + semverKey);
       const [registryUrl, ...repoParts] = requestedImage.split("/");
       const repo = repoParts.join("/");
       let dockerApiUrl = "";
@@ -47,16 +43,22 @@ async function updateImages() {
           const ghcrToken = process.env["GHCR_TOKEN"];
           dockerApiUrl = `https://${registryUrl}/v2/${repo}`;
           headers = {
-            Authorization:
-              "Bearer " + Buffer.from(ghcrToken).toString("base64"),
+            Authorization: "Bearer " + Buffer.from(ghcrToken).toString("base64"),
+          };
+          break;
+        case "docker.io":
+          const dockerIoToken = (
+            await doJSONRequest(`https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull`)
+          )["token"];
+          dockerApiUrl = `https://index.docker.io/v2/${repo}`;
+          headers = {
+            Authorization: "Bearer " + dockerIoToken,
           };
           break;
         case "registry.gitlab.com":
-          const gitlabUsername = process.env["INPUT_GITLAB-TOKEN"];
-          const gitlabPassword = process.env["INPUT_GITLAB-TOKEN"];
-          const gitlabBasicAuth = Buffer.from(
-            gitlabUsername + ":" + gitlabPassword
-          ).toString("base64");
+          const gitlabUsername = process.env["GITLAB_USERNAME"];
+          const gitlabPassword = process.env["GITLAB_PASSWORD"];
+          const gitlabBasicAuth = Buffer.from(gitlabUsername + ":" + gitlabPassword).toString("base64");
           const gitlabToken = (
             await doJSONRequest(
               `https://gitlab.com/jwt/auth?service=container_registry&scope=repository:${repo}:pull`,
@@ -73,15 +75,21 @@ async function updateImages() {
           headers: headers,
         })
       )["tags"];
-      console.log(tags, requestedVersion);
-      const tag =
-        semver.maxSatisfying(tags, requestedVersion) || requestedVersion;
+      const tag = semver.maxSatisfying(tags, requestedVersion) || requestedVersion;
 
-      const digest = (
-        await doJSONRequest(`${dockerApiUrl}/manifests/${tag}`, {
-          headers: headers,
-        })
-      )["config"]["digest"];
+      const digestObj = await doJSONRequest(`${dockerApiUrl}/manifests/${tag}`, {
+        headers: {
+          ...headers,
+          Accept: "application/vnd.docker.distribution.manifest.v2+json",
+        },
+      });
+      const digest = digestObj["config"]["digest"];
+      // let digest = "unknown";
+      // if ("config" in digestObj) {
+      //   digest = digestObj["config"]["digest"];
+      // } else {
+      //   console.warn('Manifest missing for ');
+      // }
 
       const versionsFile = yaml.load(await fs.readFile(outputFileName, "utf8"));
       const currentTag = _.get(versionsFile, imageTagKey + "." + semverKey);
