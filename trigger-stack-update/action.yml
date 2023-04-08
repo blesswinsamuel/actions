@@ -1,20 +1,20 @@
-name: 'Trigger stack update'
-description: 'Trigger stack image update job'
+name: "Trigger stack update"
+description: "Trigger stack image update job"
 
 inputs:
   github-token:
-    description: 'Github Token'
+    description: "Github Token"
     required: true
   stack-repo:
-    description: 'Stack repository'
+    description: "Stack repository"
     required: true
   stack-repo-branch:
-    description: 'Stack repository branch'
+    description: "Stack repository branch"
     required: true
   stack-repo-workflow-id:
-    description: 'Stack repository workflow id'
+    description: "Stack repository workflow id"
     required: true
-    default: update-versions.yaml
+    default: renovate.yaml
 
 runs:
   using: "composite"

@@ -1,8 +1,0 @@
-name: 'Image updater'
-description: 'image updater'
-outputs:
-  commit-message:
-    description: 'Commit message if any'
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
