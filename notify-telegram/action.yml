@@ -31,7 +31,7 @@ runs:
             failure: '❌',
             cancelled: '❕',
           }[jobStatus] || '❔'
-          let message = `${symbol} [${{ github.repository }}](${github.event.repository.html_url})\n`
+          let message = `${symbol} [${{ github.repository }}](${{ github.event.repository.html_url }})\n`
           message += `${jobStatus}\n`
           message += `*Workflow:* ${workflowName}\n`
           message += `*Action:* ${actionName}\n`
@@ -52,4 +52,4 @@ runs:
             console.log(data)
           }).catch((error) => {
             console.error(error)
-          }
+          })
