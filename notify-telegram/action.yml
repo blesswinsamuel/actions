@@ -1,0 +1,55 @@
+name: "Notify"
+description: "Notify"
+
+inputs:
+  telegram-bot-token:
+    description: "Telegram Bot Token"
+    required: true
+  telegram-chat-id:
+    description: "Telegram Chat ID"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Telegram Notification
+      uses: actions/github-script@v6
+      id: telegram-notification
+      if: always()
+      with:
+        result-encoding: string
+        retries: 3
+        script: |
+          const jobStatus = '${{ job.status }}'
+          const workflowName = '${{ github.workflow }}'
+          const actionName = '${{ github.action }}'
+          const botToken = '${{ inputs.telegram-bot-token }}'
+          const chatId = '${{ inputs.telegram-chat-id }}'
+          const url = `https://api.telegram.org/bot${botToken}/sendMessage`
+          const symbol = {
+            success: '✅',
+            failure: '❌',
+            cancelled: '❕',
+          }[jobStatus] || '❔'
+          let message = `${symbol} [${{ github.repository }}](${github.event.repository.html_url})\n`
+          message += `${jobStatus}\n`
+          message += `*Workflow:* ${workflowName}\n`
+          message += `*Action:* ${actionName}\n`
+          fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: 'Markdown'
+            })
+          }).then((response) => {
+            if (response.status >= 400) {
+              throw new Error(response.statusText)
+            }
+            return response.json()
+          }).then((data) => {
+            console.log(data)
+          }).catch((error) => {
+            console.error(error)
+          }

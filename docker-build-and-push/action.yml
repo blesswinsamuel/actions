@@ -1,35 +1,35 @@
-name: 'Docker build, push and notify'
-description: 'Docker build, push and notify'
+name: "Docker build, push and notify"
+description: "Docker build, push and notify"
 
 inputs:
   docker-registry:
-    description: 'Docker Registry'
+    description: "Docker Registry"
     required: true
     default: ghcr.io
   docker-username:
-    description: 'Docker Username'
+    description: "Docker Username"
     required: true
-    default: '${{ github.actor }}'
+    default: "${{ github.actor }}"
   docker-password:
-    description: 'Docker Password'
+    description: "Docker Password"
     required: true
-    default: '${{ github.token }}'
+    default: "${{ github.token }}"
   docker-image-name:
-    description: 'Docker Image Name'
+    description: "Docker Image Name"
     required: true
-    default: '${{ github.repository }}'
+    default: "${{ github.repository }}"
   slack-webhook:
-    description: 'Slack Webhook'
+    description: "Slack Webhook"
     required: true
   github-token:
-    description: 'Github Token'
+    description: "Github Token"
     required: true
   docker-build-platforms:
-    description: 'Docker build platforms'
+    description: "Docker build platforms"
     required: true
-    default: 'linux/amd64'
+    default: "linux/amd64"
   docker-build-args:
-    description: 'Docker build args'
+    description: "Docker build args"
     required: false
 
 runs:
@@ -37,13 +37,13 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v3
-    
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-    
+
     - name: Log in to the Container registry
       uses: docker/login-action@v2
       with:
@@ -64,7 +64,7 @@ runs:
           type=edge
 
     - name: Build and push
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         context: .
         platforms: ${{ inputs.docker-build-platforms }}

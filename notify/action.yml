@@ -1,12 +1,12 @@
-name: 'Notify'
-description: 'Notify'
+name: "Notify"
+description: "Notify"
 
 inputs:
   slack-webhook:
-    description: 'Slack Webhook'
+    description: "Slack Webhook"
     required: true
   github-token:
-    description: 'Github Token'
+    description: "Github Token"
     required: true
 
 runs:
