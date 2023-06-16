@@ -23,7 +23,7 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |-
-          const response = await github.actions.createWorkflowDispatch({
+          const response = await github.rest.actions.createWorkflowDispatch({
             owner: context.repo.owner,
             repo: '${{ inputs.stack-repo }}',
             workflow_id: '${{ inputs.stack-repo-workflow-id }}',
