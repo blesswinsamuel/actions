@@ -31,10 +31,10 @@ runs:
             failure: '❌',
             cancelled: '❕',
           }[jobStatus] || '❔'
-          let message = `${symbol} Workflow <b>${workflowName}</b>
-          <b>Status:</b> <i>${jobStatus}</i>
-          <b>Repository:</b> <a href="${{ github.event.repository.html_url }}">${{ github.repository }}</a>
-          <b>Action Run:</b> <a href="${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a>`
+          let message = `${symbol} <a href="${{ github.event.repository.html_url }}">${{ github.repository }}</a>
+          <b>Workflow:</b> ${workflowName}
+          <b>Action Run:</b> <a href="${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a>
+          <b>Status:</b> <i>${jobStatus}</i>`
           console.log(`Sending Telegram Notification: ${message}`)
           fetch(url, {
             method: 'POST',
