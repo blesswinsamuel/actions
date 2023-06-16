@@ -31,17 +31,18 @@ runs:
             failure: '❌',
             cancelled: '❕',
           }[jobStatus] || '❔'
-          let message = `${symbol} [${{ github.repository }}](${{ github.event.repository.html_url }})\n`
-          message += `${jobStatus}\n`
-          message += `*Workflow:* ${workflowName}\n`
-          message += `*Action:* ${actionName}\n`
+          let message = `${symbol} <a href="${{ github.event.repository.html_url }}">${{ github.repository }}</a>
+          <i>${jobStatus}</i>
+          <b>Workflow:</b> ${workflowName}
+          <b>Action:</b> ${actionName}`
+          console.log(`Sending Telegram Notification: ${message}`)
           fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
               chat_id: chatId,
               text: message,
-              parse_mode: 'Markdown'
+              parse_mode: 'HTML'
             })
           }).then((response) => {
             if (response.status >= 400) {
@@ -51,5 +52,6 @@ runs:
           }).then((data) => {
             console.log(data)
           }).catch((error) => {
+            console.error("Telegram Notification failed")
             console.error(error)
           })
