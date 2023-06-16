@@ -18,11 +18,11 @@ inputs:
     description: "Docker Image Name"
     required: true
     default: "${{ github.repository }}"
-  slack-webhook:
-    description: "Slack Webhook"
+  telegram-bot-token:
+    description: "Telegram Bot Token"
     required: true
-  github-token:
-    description: "Github Token"
+  telegram-chat-id:
+    description: "Telegram Chat ID"
     required: true
   docker-build-platforms:
     description: "Docker build platforms"
@@ -75,7 +75,7 @@ runs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - uses: blesswinsamuel/github-actions/notify@main
+    - uses: blesswinsamuel/github-actions/notify-telegram@main
       with:
-        github-token: ${{ inputs.github-token }}
-        slack-webhook: ${{ inputs.slack-webhook }}
+        telegram-bot-token: ${{ inputs.telegram-bot-token }}
+        telegram-chat-id: ${{ inputs.telegram-chat-id }}
