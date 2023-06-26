@@ -16,3 +16,4 @@ runs:
         status: ${{ job.status }}
         steps: ${{ toJson(steps) }}
         channel: "#github"
+        webhook-url: ${{ inputs.slack-webhook }}
