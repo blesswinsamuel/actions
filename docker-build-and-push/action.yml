@@ -20,10 +20,13 @@ inputs:
     default: "${{ github.repository }}"
   telegram-bot-token:
     description: "Telegram Bot Token"
-    required: true
+    required: false
   telegram-chat-id:
     description: "Telegram Chat ID"
-    required: true
+    required: false
+  slack-webhook:
+    description: "Slack Webhook URL"
+    required: false
   docker-build-platforms:
     description: "Docker build platforms"
     required: true
@@ -76,6 +79,12 @@ runs:
         cache-to: type=gha,mode=max
 
     - uses: blesswinsamuel/github-actions/notify-telegram@main
+      if: ${{ inputs.telegram-bot-token && inputs.telegram-chat-id }}
       with:
         telegram-bot-token: ${{ inputs.telegram-bot-token }}
         telegram-chat-id: ${{ inputs.telegram-chat-id }}
+
+    - uses: blesswinsamuel/github-actions/notify-slack@main
+      if: ${{ inputs.slack-webhook }}
+      with:
+        slack-webhook: ${{ inputs.slack-webhook }}

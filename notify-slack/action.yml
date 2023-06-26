@@ -1,0 +1,18 @@
+name: "Notify Slack"
+description: "Notify Slack"
+
+inputs:
+  slack-webhook:
+    description: "Slack Webhook"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Slack Notification
+      uses: act10ns/slack@v1
+      if: always()
+      with:
+        status: ${{ job.status }}
+        steps: ${{ toJson(steps) }}
+        channel: "#github"
