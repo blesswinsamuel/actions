@@ -34,6 +34,9 @@ inputs:
   docker-build-args:
     description: "Docker build args"
     required: false
+  docker-provenance:
+    description: "Docker provenance"
+    required: false
 
 runs:
   using: "composite"
@@ -77,6 +80,7 @@ runs:
         build-args: ${{ inputs.docker-build-args }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        provenance: ${{ inputs.docker-provenance }}
 
     - uses: blesswinsamuel/github-actions/notify-telegram@main
       if: ${{ inputs.telegram-bot-token && inputs.telegram-chat-id }}
