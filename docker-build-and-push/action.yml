@@ -2,6 +2,10 @@ name: "Docker build, push and notify"
 description: "Docker build, push and notify"
 
 inputs:
+  checkout:
+    description: "Checkout"
+    required: true
+    default: "true"
   docker-registry:
     description: "Docker Registry"
     required: true
@@ -43,6 +47,7 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v3
+      if: ${{ inputs.checkout == 'true' }}
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
