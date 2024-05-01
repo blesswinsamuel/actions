@@ -13,7 +13,7 @@ runs:
   using: "composite"
   steps:
     - name: Telegram Notification
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       id: telegram-notification
       if: always()
       with:

@@ -10,7 +10,7 @@ runs:
   using: "composite"
   steps:
     - name: Slack Notification
-      uses: act10ns/slack@v1
+      uses: act10ns/slack@v2
       if: always()
       with:
         status: ${{ job.status }}
