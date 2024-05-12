@@ -8,6 +8,12 @@ inputs:
   telegram-chat-id:
     description: "Telegram Chat ID"
     required: true
+  override-job-status:
+    description: "Override job status"
+    required: false
+  additional-message:
+    description: "Additional message to include"
+    required: false
 
 runs:
   using: "composite"
@@ -20,7 +26,7 @@ runs:
         result-encoding: string
         retries: 3
         script: |
-          const jobStatus = '${{ job.status }}'
+          const jobStatus = '${{ inputs.override-job-status || job.status }}'
           const workflowName = '${{ github.workflow }}'
           const actionName = '${{ github.action }}'
           const botToken = '${{ inputs.telegram-bot-token }}'
@@ -29,10 +35,13 @@ runs:
           const symbol = {
             success: '✅',
             failure: '❌',
-            cancelled: '❕',
+            warning: '⚠️',  // custom
+            info: 'ℹ️',  // custom
+            cancelled: '✘',
           }[jobStatus] || '❔'
+          const additionalMessage = '${{ inputs.additional-message || '' }}'
           let message = `${symbol} <a href="${{ github.event.repository.html_url }}">${{ github.repository }}</a>
-          <b>Workflow:</b> ${workflowName}
+          <b>Workflow:</b> ${workflowName} ${additionalMessage ? `(${additionalMessage})` : ''}
           <b>Action Run:</b> <a href="${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a>
           <b>Status:</b> <i>${jobStatus}</i>`
           console.log(`Sending Telegram Notification: ${message}`)
